@@ -12,6 +12,9 @@ class Hostage():
         curses.noecho()
 
         self.display = []
+        self.counter = 0
+        self.busy = True
+        self.multiple = 0
 
         self.init_display()
         self.get_input()
@@ -47,6 +50,7 @@ class Hostage():
                     if list(self.display[self.player_y-1])[self.player_x-self.columns] == "H":
                         self.player_y -= 1 
                         del self.display[self.player_y]
+                        self.counter += 1
                 
                 self.update_display()
         except IndexError:
@@ -55,14 +59,40 @@ class Hostage():
     def update_display(self):
         self.stdscr.clear()
         for i, val in enumerate(self.display):
-            self.stdscr.addstr(i, self.columns, re.sub(rf"[{self.charset}]", choice(self.charset), val))
+            self.stdscr.addstr(i, self.columns, re.sub(rf"[{self.charset}]", choice(self.charset) if self.counter > 4 else "K", val))
         self.stdscr.addstr(self.player_y, self.player_x, "R")
+
+        if self.counter > self.multiple:
+            self.stdscr.addstr(self.lines, 0, "Well this is boring. I'm outta here.".center(self.stdscr.getmaxyx()[1]-1))
+            if self.counter > self.multiple+2:
+                self.stdscr.addstr(self.lines, 0, "Wait, let me make this 'funner.'".center(self.stdscr.getmaxyx()[1]-1))
+                if self.counter > self.multiple+5:
+                    self.stdscr.addstr(self.lines, 0, "Well this is also boring. Let's make this amazing.".center(self.stdscr.getmaxyx()[1]-1))
+                    if self.counter == self.multiple+6:
+                        self.counter += 1
+                        for i in range(3):
+                            thread = Thread(target=self.clock_func)
+                            thread.start()
+
+                    elif self.clock > 5.0:
+                        curses.endwin()
+                        self.busy = False
+
         self.stdscr.refresh()
+
+    def clock_func(self):
+        self.clock = 0.0
+        while self.busy:
+            self.stdscr.refresh()
+            self.stdscr.addstr(0, self.columns*2+1, "%.3f" % self.clock)
+            sleep(0.001)
+            self.clock += 0.001
 
     def exit(self):
         curses.curs_set(1)
         curses.echo()
         curses.endwin()
+        print("nice")
 
 if __name__ == "__main__":
     test = Hostage()
